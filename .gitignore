@@ -1,0 +1,9 @@
+# standart gitignore file
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+.idea
