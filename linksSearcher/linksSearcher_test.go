@@ -5,24 +5,24 @@ import (
 )
 
 var testCases = []struct {
-	input    string
-	inputFilename   string
-	outputFilename   string
-	result    string
+	input             string
+	inputFilename     string
+	outputFilename    string
+	result            string
 	numberOfProcesses int
 }{
 	{
-		input:    "https://www.digitalocean.com/community/tutorials*8;9joasd\nasasfkpml;mlhttps://ru.wikipedia.org lpmhttps://stackoverflow.com/questions|l;q\nhttps://www.digitalocean.com/community/tutorials*8;",
-		inputFilename:    "link_searcher_test1_input.txt",
+		input:             "https://www.digitalocean.com/community/tutorials*8;9joasd\nasasfkpml;mlhttps://ru.wikipedia.org lpmhttps://stackoverflow.com/questions|l;q\nhttps://www.digitalocean.com/community/tutorials*8;",
+		inputFilename:     "link_searcher_test1_input.txt",
 		outputFilename:    "link_searcher_test1_output.txt",
-		result:    "https://www.digitalocean.com/community/tutorials\nhttps://ru.wikipedia.org\nhttps://stackoverflow.com/questions\nhttps://www.digitalocean.com/community/tutorials\n",
+		result:            "https://www.digitalocean.com/community/tutorials\nhttps://ru.wikipedia.org\nhttps://stackoverflow.com/questions\nhttps://www.digitalocean.com/community/tutorials\n",
 		numberOfProcesses: 5,
 	},
 	{
-		input:    "asahttp://sfkp0i_iwlhttps://ru.wikipedia.org lpmhttps://nonexistentlink.com/forum|l;q\nhttps://www.digitalocean.com/community/tutorials{!imklsdf",
-		inputFilename:    "link_searcher_test2_input.txt",
+		input:             "asahttp://sfkp0i_iwlhttps://ru.wikipedia.org lpmhttps://nonexistentlink.com/forum|l;q\nhttps://www.digitalocean.com/community/tutorials{!imklsdf",
+		inputFilename:     "link_searcher_test2_input.txt",
 		outputFilename:    "link_searcher_test2_output.txt",
-		result:    "https://ru.wikipedia.org\nhttps://www.digitalocean.com/community/tutorials\n",
+		result:            "https://ru.wikipedia.org\nhttps://www.digitalocean.com/community/tutorials\n",
 		numberOfProcesses: 2,
 	},
 }

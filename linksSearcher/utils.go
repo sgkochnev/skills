@@ -8,9 +8,9 @@ import (
 )
 
 const (
-	emptyByte = "\x00"
+	emptyByte             = "\x00"
 	maxResponseBufferSize = 128 * 1024
-	permissions = 666
+	permissions           = 666
 )
 
 func createInputFile(fileName, input string) (*os.File, error) {
@@ -18,12 +18,12 @@ func createInputFile(fileName, input string) (*os.File, error) {
 	if os.IsNotExist(err) {
 		file, err = os.Create(fileName)
 	}
-	if err != nil{
+	if err != nil {
 		return nil, fmt.Errorf("coulndn't create input file: %v", err)
 	}
 	_, err = file.WriteString(input)
 
-	if err != nil{
+	if err != nil {
 		return nil, fmt.Errorf("coulndn't write to input file: %v", err)
 	}
 	return file, nil
@@ -31,7 +31,7 @@ func createInputFile(fileName, input string) (*os.File, error) {
 
 func readOutputFile(fileName string) (string, error) {
 	file, err := os.Open(fileName)
-	if err != nil{
+	if err != nil {
 		return "", fmt.Errorf("coulndn't open output file: %v", err)
 	}
 

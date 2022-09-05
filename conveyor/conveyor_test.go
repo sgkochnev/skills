@@ -8,10 +8,10 @@ import (
 )
 
 const (
-	test1Count = 3
-	test1Sleep = 100 * time.Millisecond
+	test1Count      = 3
+	test1Sleep      = 100 * time.Millisecond
 	test1SleepDelta = 50 * time.Millisecond
-	test1Result = "gggooo!!!"
+	test1Result     = "gggooo!!!"
 )
 
 func TestConveyor1(t *testing.T) {
@@ -42,7 +42,7 @@ func TestConveyor1(t *testing.T) {
 
 	end := time.Since(start)
 
-	expectedTime := test1Sleep * test1Count + test1SleepDelta
+	expectedTime := test1Sleep*test1Count + test1SleepDelta
 
 	if end > expectedTime {
 		t.Errorf("Execution took too long. Got: %s. Expected: < %s", end, expectedTime)
