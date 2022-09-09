@@ -22,14 +22,14 @@ func RunConveyor(tasksFlow ...task) {
 			}(t, chOut)
 
 		case len(tasksFlow) - 1:
-			chIn := f(chOut)
+			chIn := fanIn(chOut)
 			go func(t task, in chan interface{}) {
 				t(in, nil)
 				wg.Done()
 			}(t, chIn)
 
 		default:
-			chIn := f(chOut)
+			chIn := fanIn(chOut)
 			chOut = make(chan interface{})
 			go func(t task, in, out chan interface{}) {
 				t(in, out)
@@ -41,7 +41,7 @@ func RunConveyor(tasksFlow ...task) {
 	wg.Wait()
 }
 
-func f(chIn chan interface{}) chan interface{} {
+func fanIn(chIn chan interface{}) chan interface{} {
 	ch := make(chan interface{})
 	go func() {
 		for v := range chIn {
