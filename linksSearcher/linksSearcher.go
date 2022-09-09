@@ -34,12 +34,14 @@ func FindLinks(procNumber int, inputFilename, outputFilename string) error {
 	out := output(outputFilename)
 
 	chanLinks := make(chan string)
+	writingComplited := make(chan struct{})
 
-	go func() {
+	go func(ch chan struct{}) {
 		if err := writeLinks(chanLinks, out); err != nil {
-			log.Fatalf("Error: %v", err)
+			log.Fatalf("Error occured: %v", err)
 		}
-	}()
+		ch <- struct{}{}
+	}(writingComplited)
 
 	reader := bufio.NewReader(in)
 	wg := sync.WaitGroup{}
@@ -66,6 +68,7 @@ loop:
 	wg.Wait()
 	close(chanLinks)
 
+	<-writingComplited
 	return nil
 }
 

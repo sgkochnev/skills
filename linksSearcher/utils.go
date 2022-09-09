@@ -1,6 +1,7 @@
 package linksSearcher
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io"
@@ -50,4 +51,36 @@ func readOutputFile(fileName string) (string, error) {
 	responseBytes = bytes.Trim(responseBytes, emptyByte)
 
 	return string(responseBytes), nil
+}
+
+func readOutputFile2(fileName string) ([]string, error) {
+	file, err := os.Open(fileName)
+	if err != nil {
+		return []string{}, fmt.Errorf("coulndn't open output file: %v", err)
+	}
+	reader := bufio.NewReader(file)
+	var result []string
+	for {
+		line, _, err := reader.ReadLine()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return []string{}, fmt.Errorf("error reading response: %v", err)
+		}
+		result = append(result, string(line))
+	}
+
+	return result, nil
+}
+
+func deleteFiles(names ...string) error {
+	var err error
+	for i, name := range names {
+		err = os.Remove(name)
+		if err != nil {
+			return fmt.Errorf("Error [%d %s: %w\n]", i, name, err)
+		}
+	}
+	return err
 }
