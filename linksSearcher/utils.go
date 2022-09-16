@@ -79,7 +79,7 @@ func deleteFiles(names ...string) error {
 	for i, name := range names {
 		err = os.Remove(name)
 		if err != nil {
-			return fmt.Errorf("Error [%d %s: %w\n]", i, name, err)
+			return fmt.Errorf("error [%d %s: %w\n]", i, name, err)
 		}
 	}
 	return err
