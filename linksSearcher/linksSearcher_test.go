@@ -1,8 +1,10 @@
 package linksSearcher
 
 import (
-	"github.com/stretchr/testify/assert"
+	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var testCases = []struct {
@@ -36,15 +38,10 @@ var testCases2 = []struct {
 	numberOfProcesses int
 }{
 	{
-		input:          "https://www.digitalocean.com/community/tutorials*8;9joasd\nasasfkpml;mlhttps://ru.wikipedia.org lpmhttps://stackoverflow.com/questions|l;q\nhttps://www.digitalocean.com/community/tutorials*8;",
-		inputFilename:  "link_searcher_test1_input.txt",
-		outputFilename: "link_searcher_test1_output.txt",
-		result: []string{
-			"https://www.digitalocean.com/community/tutorials",
-			"https://ru.wikipedia.org",
-			"https://stackoverflow.com/questions",
-			"https://www.digitalocean.com/community/tutorials",
-		},
+		input:             strings.Repeat("https://www.digitalocean.com/community/tutorials*8;9joasd\nasasfkpml;mlhttps://ru.wikipedia.org lpmhttps://stackoverflow.com/questions|l;q\nhttps://www.digitalocean.com/community/tutorials*8;", 12),
+		inputFilename:     "link_searcher_test1_input.txt",
+		outputFilename:    "link_searcher_test1_output.txt",
+		result:            strings.Split(strings.TrimSuffix(strings.Repeat("https://www.digitalocean.com/community/tutorials\nhttps://ru.wikipedia.org\nhttps://stackoverflow.com/questions\nhttps://www.digitalocean.com/community/tutorials\n", 12), "\n"), "\n"),
 		numberOfProcesses: 5,
 	},
 	{

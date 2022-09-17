@@ -2,78 +2,71 @@ package linksSearcher
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"regexp"
-	"runtime"
 	"strings"
-	"sync"
 	"unicode/utf8"
 )
 
 const minLengthURL = 11
 
 const (
-	_http       = "http://"
-	_spacehttp  = " http://"
-	_https      = "https://"
-	_spacehttps = " https://"
+	HTTP       = "http://"
+	SPACEHTTP  = " http://"
+	HTTPS      = "https://"
+	SPACEHTTPS = " https://"
 )
 
 var reURL = regexp.MustCompile(`http[s]?://[\w\[\]\-./?=&:#@!$'()*+,;_]*`)
 
 func FindLinks(procNumber int, inputFilename, outputFilename string) error {
 
-	runtime.GOMAXPROCS(procNumber)
-
 	in := input(inputFilename)
 	out := output(outputFilename)
 
-	chanLinks := make(chan string)
-	writingComplited := make(chan struct{})
+	wp := NewWP(procNumber)
+	go wp.Run()
 
-	go func(ch chan struct{}) {
-		if err := writeLinks(chanLinks, out); err != nil {
-			log.Fatalf("Error occured: %v", err)
-		}
-		ch <- struct{}{}
-	}(writingComplited)
+	done := make(chan struct{})
+	resMap := make(map[int][]string)
+	go func() {
+		resMap = writeResultInMap(resMap, wp.Result())
+		close(done)
+	}()
 
-	reader := bufio.NewReader(in)
-	wg := sync.WaitGroup{}
-
-loop:
-	for {
-		for i := 0; i < procNumber; i++ {
-			line, _, err := reader.ReadLine()
-			if err == io.EOF {
-				break loop
-			}
-			if err != nil {
-				return err
-			}
-
-			wg.Add(1)
-			go func(line string) {
-				findLinks(line, chanLinks)
-				wg.Done()
-			}(string(line))
-		}
-		wg.Wait()
+	if err := addJobs(in, wp); err != nil {
+		return err
 	}
-	wg.Wait()
-	close(chanLinks)
 
-	<-writingComplited
+	<-done
+
+	return write(out, resMap)
+}
+
+func addJobs(r io.Reader, wp *WorkerPool) error {
+	reader := bufio.NewReader(r)
+
+	for i := 0; ; i++ {
+		line, _, err := reader.ReadLine()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+
+		wp.AddJob(Job{Id: i, Arg: string(line), ExecFn: findLinks})
+	}
+	wp.EndJob()
 	return nil
 }
 
 func input(inputFilename string) *os.File {
-	in := &os.File{}
 	in, err := os.Open(inputFilename)
 	if err != nil {
 		in = os.Stdin
@@ -82,7 +75,6 @@ func input(inputFilename string) *os.File {
 }
 
 func output(outputFilename string) *os.File {
-	out := &os.File{}
 	out, err := os.OpenFile(outputFilename, os.O_CREATE|os.O_WRONLY, os.ModePerm)
 	if err != nil {
 		out = os.Stdout
@@ -90,44 +82,50 @@ func output(outputFilename string) *os.File {
 	return out
 }
 
-func writeLinks(links <-chan string, w io.StringWriter) error {
-	for l := range links {
-		if _, err := w.WriteString(l + "\n"); err != nil {
-			return fmt.Errorf("coulndn't write to input file: %v", err)
+func writeResultInMap(m map[int][]string, res <-chan Result) map[int][]string {
+	for r := range res {
+		m[r.Id] = r.Value
+	}
+	return m
+}
+
+func write(w io.StringWriter, m map[int][]string) error {
+	for i := 0; i < len(m); i++ {
+		for _, link := range m[i] {
+			if _, err := w.WriteString(link + "\n"); err != nil {
+				return fmt.Errorf("coulndn't write to input file: %v", err)
+			}
 		}
 	}
 	return nil
 }
 
-func findLinks(line string, chOut chan string) {
+func findLinks(line string) []string {
 
 	links := splitLineIntoLinks(line)
 
-	linkChan := make(chan string)
-
+	var result []string
 	for _, link := range links {
-		go checkURL(link, linkChan)
-	}
-
-	for i := 0; i <= len(links); i++ {
-		if link := <-linkChan; link != "" {
-			chOut <- link
+		link, err := checkURL(link)
+		if err != nil {
+			continue
 		}
+		result = append(result, link)
 	}
+	return result
 }
 
 func splitLineIntoLinks(line string) []string {
-	line = strings.ReplaceAll(line, _http, _spacehttp)
-	line = strings.ReplaceAll(line, _https, _spacehttps)
+	line = strings.ReplaceAll(line, HTTP, SPACEHTTP)
+	line = strings.ReplaceAll(line, HTTPS, SPACEHTTPS)
 
 	return reURL.FindAllString(line, -1)
 }
 
-func checkURL(link string, chanLinks chan<- string) {
+func checkURL(link string) (string, error) {
 
 	if err := checkBaseURL(link); err != nil {
-		chanLinks <- ""
-		return
+		return "", err
 	}
 
 	n := utf8.RuneCountInString(link)
@@ -135,26 +133,25 @@ func checkURL(link string, chanLinks chan<- string) {
 	for n >= minLengthURL {
 
 		res, err := http.Get(link[:n])
-		if err != nil || res.StatusCode > 399 {
+		if err != nil || res.StatusCode > 399 && res.StatusCode < 500 {
 			n--
 			continue
 		}
 
-		chanLinks <- link[:n]
-		break
+		return link[:n], nil
 	}
-	chanLinks <- ""
+	return "", errors.New("error: invalid link")
 }
 
 func checkBaseURL(link string) error {
 	u, err := url.Parse(link)
-	if err == nil {
-		baseURL := &url.URL{
-			Scheme: u.Scheme,
-			Host:   u.Hostname(),
-		}
-		_, err = http.Get(baseURL.String())
+	if err != nil {
 		return err
 	}
+	baseURL := &url.URL{
+		Scheme: u.Scheme,
+		Host:   u.Hostname(),
+	}
+	_, err = http.Get(baseURL.String())
 	return err
 }
